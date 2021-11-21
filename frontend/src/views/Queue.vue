@@ -69,11 +69,11 @@ export default {
         console.log('Removing: ', user);
         var index = this.queue.indexOf(user.nickname);
         if (index >= 0) {
-          this.queue.splice(index, 1);
+          this.$axios.delete('/queue/' + user.nickname).then((response) => {
+            this.queue.splice(index, 1);
+            console.log('Confirmed removal of ', response);
+          });
         }
-        axios.delete('/queue/' + user.nickname).then((response) => {
-          console.log('Confirmed removal of ', response);
-        });
       }
     },
     auth(event) {
