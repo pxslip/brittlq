@@ -37,44 +37,36 @@
 <script lang="ts">
 import QueueEntry from '@/components/queue/QueueEntry.vue';
 import QueueControls from '@/components/queue/QueueControls.vue';
-import { defineComponent } from '@vue/runtime-core';
-import { mapState } from 'vuex';
+import { computed, defineComponent, onUnmounted } from '@vue/runtime-core';
+import { mapState, useStore } from 'vuex';
 import { UPDATE } from '@/store/queue/operations';
+import { State } from '@/store';
+import logging from '@/utils/logging';
 
 interface Data {
   intervalId: number;
 }
 
 export default defineComponent({
-  name: 'Queue',
   components: { QueueControls, QueueEntry },
-  data(): Data {
-    return {
-      intervalId: 0,
+  setup() {
+    const intervalId = window.setInterval(() => {
+      // poll the queue endpoint for updates here
+      logging.log('Poll fired');
+    }, 500);
+    onUnmounted(() => {
+      window.clearInterval(intervalId);
+    });
+    const store = useStore<State>();
+    const queue = computed(() => store.state.queue.queue);
+
+    const queuePop = () => {
+      store.dispatch('popQueue'); // TODO: this isn't correct, update during pinia conversion
     };
-  },
-  created() {},
-  mounted() {
-    //TODO: convert this to a websocket server? Avoids uneccessary network overhead
-    // this.intervalId = window.setInterval(this.poll, 4000);
-  },
-  unmounted() {
-    window.clearInterval(this.intervalId);
-  },
-  computed: {
-    ...mapState('queue', ['queue']),
-  },
-  methods: {
-    async poll() {
-      try {
-        this.$store.dispatch(UPDATE);
-      } catch (exc) {
-        console.error(exc);
-      }
-    },
-    queuePop(queue: Array<any>) {
-      this.queue = queue;
-    },
+    return {
+      queue,
+      queuePop,
+    };
   },
 });
 </script>
