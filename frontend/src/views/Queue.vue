@@ -3,7 +3,6 @@
     <QueueControls
       :queue-length="queue.length"
       @queuePop="queuePop"
-      :start-open="isOpen"
       class="
         flex flex-row
         justify-around
@@ -28,7 +27,6 @@
           :key="user.id"
           :entry="user"
           :index="index + 1"
-          @remove-user="remove"
           class="queue-item"
         ></QueueEntry>
       </tbody>
@@ -36,20 +34,23 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import QueueEntry from '@/components/queue/QueueEntry.vue';
 import QueueControls from '@/components/queue/QueueControls.vue';
+import { defineComponent } from '@vue/runtime-core';
+import { mapState } from 'vuex';
+import { UPDATE } from '@/store/queue/operations';
 
-export default {
+interface Data {
+  intervalId: number;
+}
+
+export default defineComponent({
   name: 'Queue',
   components: { QueueControls, QueueEntry },
-  data() {
+  data(): Data {
     return {
-      isOpen: false,
-      queue: [],
-      isConnected: false,
-      intervalId: null,
-      partyTime: 5,
+      intervalId: 0,
     };
   },
   created() {},
@@ -60,39 +61,22 @@ export default {
   unmounted() {
     window.clearInterval(this.intervalId);
   },
+  computed: {
+    ...mapState('queue', ['queue']),
+  },
   methods: {
     async poll() {
       try {
-        const { data } = await this.$axios.get('/queue/');
-        this.queue = data.queue;
-        this.isOpen = data.is_open;
+        this.$store.dispatch(UPDATE);
       } catch (exc) {
         console.error(exc);
       }
     },
-    remove(user) {
-      if (user) {
-        console.log('Removing: ', user);
-        var index = this.queue.indexOf(user.nickname);
-        if (index >= 0) {
-          this.$axios.delete('/queue/' + user.nickname).then((response) => {
-            this.queue.splice(index, 1);
-            console.log('Confirmed removal of ', response);
-          });
-        }
-      }
-    },
-    auth(event) {
-      if (event) {
-        let token = document.location.hash;
-        console.log(token);
-      }
-    },
-    queuePop(queue) {
+    queuePop(queue: Array<any>) {
       this.queue = queue;
     },
   },
-};
+});
 </script>
 
 <style scoped>
