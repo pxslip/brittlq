@@ -11,17 +11,17 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { AxiosStatic } from 'axios';
 import { createApp } from 'vue';
-import { Store } from 'vuex';
+import { createPinia } from 'pinia';
 import App from './App.vue';
 import './assets/tailwind.css';
 import router from './router';
-import store, { axios, State } from './store';
-import { SET_TOKEN } from './store/twitch/operations';
+import axios from './store/axios';
+import { useTwitchStore } from './store/twitch';
+import { piniaPersistPlugin } from './store/persist';
 
 declare module '@vue/runtime-core' {
   export interface ComponentCustomProperties {
     $axios: AxiosStatic;
-    $store: Store<State>;
   }
 }
 
@@ -35,14 +35,17 @@ library.add(
   faTimesCircle
 );
 
+const pinia = createPinia();
+pinia.use(piniaPersistPlugin);
+
 createApp(App)
   .use(router)
-  .use(store)
+  .use(pinia)
   .component('fa-icon', FontAwesomeIcon)
   .use((app) => {
     app.config.globalProperties.$axios = axios;
   })
   .mount('#app');
 
-// Dispatches an action in the store that checks for the hash fragment and sets the token if it exists
-store.dispatch(SET_TOKEN);
+// set the twitch token if it exists
+useTwitchStore().setToken();

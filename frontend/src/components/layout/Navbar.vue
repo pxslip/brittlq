@@ -1,12 +1,6 @@
 <template>
   <nav
-    class="
-      flex flex-row
-      justify-items-center
-      col-span-4
-      border-b-2 border-gray-900
-      bg-gray-200
-    "
+    class="flex flex-row justify-items-center col-span-4 border-b-2 border-gray-900 bg-gray-200"
   >
     <h1 class="py-2 px-4 border-r border-gray-900 text-xl font-mono w-1/6">
       BrittlBot/BrittlQ
@@ -41,15 +35,7 @@
         <fa-icon v-else :icon="['fas', 'chevron-down']" />
       </MenuButton>
       <MenuItems
-        class="
-          absolute
-          right-0
-          origin-top-right
-          divide-y divide-gray-100
-          bg-gray-200
-          border-gray-900 border border-t-0
-          z-50
-        "
+        class="absolute right-0 origin-top-right divide-y divide-gray-100 bg-gray-200 border-gray-900 border border-t-0 z-50"
       >
         <MenuItem v-slot="{ active }" v-if="!hasToken">
           <a
@@ -77,7 +63,7 @@
               'min-w-max',
               { 'bg-gray-300': active },
             ]"
-            @click="clearToken"
+            @click="logoutTwitch"
           >
             Disconnect from Twitch
             <fa-icon :icon="['far', 'times-circle']" />
@@ -85,7 +71,11 @@
         </MenuItem>
       </MenuItems>
     </Menu>
-    <button type="button" @click="toggleChat" class="px-4">
+    <button
+      type="button"
+      @click="isChatExpanded = !isChatExpanded"
+      class="px-4"
+    >
       <fa-icon
         :icon="['fas', 'angle-double-right']"
         :aria-label="toggleChatLabel"
@@ -94,7 +84,7 @@
           'transition-transform',
           'transform',
           'delay-300',
-          { 'rotate-180': !chatOpen },
+          { 'rotate-180': !isChatExpanded },
         ]"
       />
     </button>
@@ -102,32 +92,37 @@
 </template>
 
 <script lang="ts">
-import { mapGetters, mapMutations } from 'vuex';
+import { useTwitchStore } from '@/store/twitch';
+import { useTwitchChatStore } from '@/store/twitch-chat';
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue';
-import { TOGGLE_CHAT_SIDEBAR } from '../../store/mutations';
-import { CLEAR_TOKEN } from '@/store/twitch/operations';
-import { defineComponent } from '@vue/runtime-core';
+import { storeToRefs } from 'pinia';
+import { computed, defineComponent } from 'vue';
 export default defineComponent({
+  name: 'BQNavbar',
   components: {
     Menu,
     MenuButton,
     MenuItems,
     MenuItem,
   },
-  computed: {
-    toggleChatLabel(): string {
-      return this.chatOpen ? 'Hide Chat' : 'Show Chat';
-    },
-    chatOpen(): boolean {
-      return this.$store.state.common.chatSidebarOpen;
-    },
-    ...mapGetters('twitch', ['twitchOauthUri', 'hasToken']),
-  },
-  methods: {
-    ...mapMutations({
-      toggleChat: TOGGLE_CHAT_SIDEBAR,
-      clearToken: CLEAR_TOKEN,
-    }),
+  setup() {
+    const twitchChatStore = useTwitchChatStore();
+    const twitchStore = useTwitchStore();
+    const toggleChatLabel = computed(() =>
+      twitchChatStore.isChatExpanded ? 'Hide Twitch Chat' : 'Show Twitch Chat'
+    );
+    const { isChatExpanded } = storeToRefs(twitchChatStore);
+    const { hasToken, twitchOauthUri } = storeToRefs(twitchStore);
+    const logoutTwitch = () => {
+      twitchStore.token = '';
+    };
+    return {
+      toggleChatLabel,
+      isChatExpanded,
+      logoutTwitch,
+      hasToken,
+      twitchOauthUri,
+    };
   },
 });
 </script>

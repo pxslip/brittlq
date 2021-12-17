@@ -1,16 +1,9 @@
 <template>
   <div class="flex flex-col gap-2">
-    <QueueControls
+    <queue-controls
       :queue-length="queue.length"
-      @queuePop="queuePop"
-      class="
-        flex flex-row
-        justify-around
-        w-full
-        p-2
-        border-b border-gray-900
-        bg-gray-200
-      "
+      @queue-pop="queuePop"
+      class="flex flex-row justify-around w-full p-2 border-b border-gray-900 bg-gray-200"
     />
     <table class="queue table-auto flex-1">
       <thead>
@@ -22,13 +15,13 @@
         </tr>
       </thead>
       <tbody>
-        <QueueEntry
+        <queue-entry
           v-for="(user, index) in queue"
           :key="user.id"
           :entry="user"
           :index="index + 1"
           class="queue-item"
-        ></QueueEntry>
+        />
       </tbody>
     </table>
   </div>
@@ -37,65 +30,27 @@
 <script lang="ts">
 import QueueEntry from '@/components/queue/QueueEntry.vue';
 import QueueControls from '@/components/queue/QueueControls.vue';
-import { defineComponent } from '@vue/runtime-core';
-import { mapState } from 'vuex';
-import { UPDATE } from '@/store/queue/operations';
-
-interface Data {
-  intervalId: number;
-}
+import { computed, defineComponent, onUnmounted } from '@vue/runtime-core';
+import { useQueueStore } from '@/store/queue';
 
 export default defineComponent({
-  name: 'Queue',
+  name: 'PartyQueue',
   components: { QueueControls, QueueEntry },
-  data(): Data {
-    return {
-      intervalId: 0,
+  setup() {
+    const queueStore = useQueueStore();
+    queueStore.startPollingQueue(10000);
+    onUnmounted(() => {
+      queueStore.stopPollingQueue();
+    });
+    const queue = computed(() => queueStore.queue);
+
+    const queuePop = () => {
+      queueStore.popQueue();
     };
-  },
-  created() {},
-  mounted() {
-    //TODO: convert this to a websocket server? Avoids uneccessary network overhead
-    // this.intervalId = window.setInterval(this.poll, 4000);
-  },
-  unmounted() {
-    window.clearInterval(this.intervalId);
-  },
-  computed: {
-    ...mapState('queue', ['queue']),
-  },
-  methods: {
-    async poll() {
-      try {
-        this.$store.dispatch(UPDATE);
-      } catch (exc) {
-        console.error(exc);
-      }
-    },
-    remove(user) {
-      if (user) {
-        console.log('Removing: ', user);
-        var index = this.queue.indexOf(user.nickname);
-        if (index >= 0) {
-          this.$axios.delete('/queue/' + user.nickname).then((response) => {
-            this.queue.splice(index, 1);
-            console.log('Confirmed removal of ', response);
-          });
-        }
-        this.$axios.delete('/queue/' + user.nickname).then((response) => {
-          console.log('Confirmed removal of ', response);
-        });
-      }
-    },
-    auth(event) {
-      if (event) {
-        let token = document.location.hash;
-        console.log(token);
-      }
-    },
-    queuePop(queue) {
-      this.queue = queue;
-    },
+    return {
+      queue,
+      queuePop,
+    };
   },
 });
 </script>
