@@ -22,7 +22,7 @@ serde = { version = "1.0", features = ["rc"] }
 serde_json = "1.0"
 thiserror = "1.0"
 time = { version = "0.3.5", features = ["serde", "formatting", "local-offset"] }
-tokio = { version = "1.2", features = ["full"] }
+tokio = { version = "1.8", features = ["full"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-bunyan-formatter = "0.2"
 tracing-futures = "0.2"
